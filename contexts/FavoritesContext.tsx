@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { 
+  setFavorites as setFavoritesRedux, 
+  toggleFavorite as toggleFavoriteRedux 
+} from '../store/slices/favoritesSlice';
 
 interface FavoritesContextType {
   favorites: string[]; // Array of product IDs
@@ -12,24 +17,30 @@ interface FavoritesContextType {
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const dispatch = useAppDispatch();
+  const favorites = useAppSelector((state) => state.favorites.favoriteIds);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     loadFavorites();
   }, []);
 
   useEffect(() => {
-    saveFavorites();
-  }, [favorites]);
+    if (isInitialized) {
+      saveFavorites();
+    }
+  }, [favorites, isInitialized]);
 
   const loadFavorites = async () => {
     try {
       const storedFavorites = await AsyncStorage.getItem('@favorites');
       if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites));
+        dispatch(setFavoritesRedux(JSON.parse(storedFavorites)));
       }
+      setIsInitialized(true);
     } catch (error) {
       console.error('Error loading favorites:', error);
+      setIsInitialized(true);
     }
   };
 
@@ -42,16 +53,15 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   };
 
   const addToFavorites = async (productId: string) => {
-    setFavorites((prev) => {
-      if (prev.includes(productId)) {
-        return prev;
-      }
-      return [...prev, productId];
-    });
+    if (!favorites.includes(productId)) {
+      dispatch(toggleFavoriteRedux(productId));
+    }
   };
 
   const removeFromFavorites = async (productId: string) => {
-    setFavorites((prev) => prev.filter((id) => id !== productId));
+    if (favorites.includes(productId)) {
+      dispatch(toggleFavoriteRedux(productId));
+    }
   };
 
   const isFavorite = (productId: string): boolean => {
@@ -59,11 +69,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleFavorite = async (productId: string) => {
-    if (isFavorite(productId)) {
-      await removeFromFavorites(productId);
-    } else {
-      await addToFavorites(productId);
-    }
+    dispatch(toggleFavoriteRedux(productId));
   };
 
   return (

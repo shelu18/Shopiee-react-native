@@ -2,32 +2,48 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product, CartItem, CartContextType } from '../types';
 import { updateProductStock, getProductById } from '../services/productService';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { 
+  setCartItems as setCartItemsRedux, 
+  addItem, 
+  updateItemQuantity, 
+  removeItem, 
+  clearCart as clearCartRedux 
+} from '../store/slices/cartSlice';
+import { updateProductStock as updateProductStockRedux } from '../store/slices/productsSlice';
 
 const CART_STORAGE_KEY = '@shopping_cart';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const dispatch = useAppDispatch();
+  const cartItems = useAppSelector((state) => state.cart.items);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load cart from AsyncStorage on mount
   useEffect(() => {
     loadCart();
   }, []);
 
-  // Save cart to AsyncStorage whenever it changes
+  // Save cart to AsyncStorage whenever it changes (skip initial load)
   useEffect(() => {
-    saveCart();
-  }, [cartItems]);
+    if (isInitialized) {
+      saveCart();
+    }
+  }, [cartItems, isInitialized]);
 
   const loadCart = async () => {
     try {
       const cartData = await AsyncStorage.getItem(CART_STORAGE_KEY);
       if (cartData) {
-        setCartItems(JSON.parse(cartData));
+        const items = JSON.parse(cartData);
+        dispatch(setCartItemsRedux(items));
       }
+      setIsInitialized(true);
     } catch (error) {
       console.error('Error loading cart:', error);
+      setIsInitialized(true);
     }
   };
 
@@ -59,29 +75,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const newStock = currentProduct.stock - quantity;
       await updateProductStock(product.id, newStock);
 
-      // Update local cart
-      setCartItems((prevItems) => {
-        const existingItem = prevItems.find((item) => item.product.id === product.id);
-
-        if (existingItem) {
-          // Update quantity if item already exists
-          return prevItems.map((item) =>
-            item.product.id === product.id
-              ? { 
-                  ...item, 
-                  quantity: item.quantity + quantity,
-                  product: { ...item.product, stock: newStock }
-                }
-              : item
-          );
-        } else {
-          // Add new item with updated stock
-          return [...prevItems, { 
-            product: { ...product, stock: newStock }, 
-            quantity 
-          }];
-        }
-      });
+      // Update Redux store
+      dispatch(updateProductStockRedux({ productId: product.id, stock: newStock }));
+      dispatch(addItem({ product: { ...product, stock: newStock }, quantity }));
     } catch (error) {
       console.error('Error adding to cart:', error);
       throw error;
@@ -99,11 +95,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (currentProduct) {
           const restoredStock = currentProduct.stock + itemToRemove.quantity;
           await updateProductStock(productId, restoredStock);
+          
+          // Update Redux store
+          dispatch(updateProductStockRedux({ productId, stock: restoredStock }));
         }
       }
 
-      // Remove from local cart
-      setCartItems((prevItems) => prevItems.filter((item) => item.product.id !== productId));
+      // Remove from Redux cart
+      dispatch(removeItem(productId));
     } catch (error) {
       console.error('Error removing from cart:', error);
       throw error;
@@ -134,23 +133,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       // Update stock in Firestore
-      // If increasing quantity (quantityDifference > 0), decrease stock
-      // If decreasing quantity (quantityDifference < 0), increase stock
       const newStock = currentProduct.stock - quantityDifference;
       await updateProductStock(productId, newStock);
 
-      // Update local cart
-      setCartItems((prevItems) =>
-        prevItems.map((item) =>
-          item.product.id === productId 
-            ? { 
-                ...item, 
-                quantity: newQuantity,
-                product: { ...item.product, stock: newStock }
-              }
-            : item
-        )
-      );
+      // Update Redux store
+      dispatch(updateProductStockRedux({ productId, stock: newStock }));
+      dispatch(updateItemQuantity({ productId, quantity: newQuantity }));
     } catch (error) {
       console.error('Error updating quantity:', error);
       throw error;
@@ -165,11 +153,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (currentProduct) {
           const restoredStock = currentProduct.stock + item.quantity;
           await updateProductStock(item.product.id, restoredStock);
+          dispatch(updateProductStockRedux({ productId: item.product.id, stock: restoredStock }));
         }
       }
 
-      // Clear local cart
-      setCartItems([]);
+      // Clear Redux cart
+      dispatch(clearCartRedux());
       await AsyncStorage.removeItem(CART_STORAGE_KEY);
     } catch (error) {
       console.error('Error clearing cart:', error);
@@ -180,7 +169,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const completeOrder = async () => {
     try {
       // Clear cart WITHOUT restoring stock (order is completed)
-      setCartItems([]);
+      dispatch(clearCartRedux());
       await AsyncStorage.removeItem(CART_STORAGE_KEY);
     } catch (error) {
       console.error('Error completing order:', error);

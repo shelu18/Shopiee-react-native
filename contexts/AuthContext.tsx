@@ -10,33 +10,36 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { User, AuthContextType } from '../types';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setUser as setUserRedux, setLoading as setLoadingRedux, clearUser } from '../store/slices/authSlice';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const loading = useAppSelector((state) => state.auth.loading);
 
   useEffect(() => {
     try {
       const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
         if (firebaseUser) {
-          setUser({
+          const userData: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
             emailVerified: firebaseUser.emailVerified,
-          });
+          };
+          dispatch(setUserRedux(userData as any));
         } else {
-          setUser(null);
+          dispatch(clearUser());
         }
-        setLoading(false);
       });
 
       return unsubscribe;
     } catch (error) {
       console.error('Auth initialization error:', error);
-      setLoading(false);
+      dispatch(setLoadingRedux(false));
     }
   }, []);
 
@@ -55,12 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Reload user to get updated info
       await userCredential.user.reload();
       
-      setUser({
+      const userData: User = {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
         displayName: fullName,
         emailVerified: userCredential.user.emailVerified,
-      });
+      };
+      dispatch(setUserRedux(userData as any));
     } catch (error: any) {
       throw new Error(error.message);
     }
@@ -69,12 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setUser({
+      const userData: User = {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
         displayName: userCredential.user.displayName,
         emailVerified: userCredential.user.emailVerified,
-      });
+      };
+      dispatch(setUserRedux(userData as any));
     } catch (error: any) {
       throw new Error(error.message);
     }
@@ -83,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      setUser(null);
+      dispatch(clearUser());
     } catch (error: any) {
       throw new Error(error.message);
     }
@@ -102,12 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const reloadUser = async () => {
     if (auth.currentUser) {
       await auth.currentUser.reload();
-      setUser({
+      const userData: User = {
         uid: auth.currentUser.uid,
         email: auth.currentUser.email,
         displayName: auth.currentUser.displayName,
         emailVerified: auth.currentUser.emailVerified,
-      });
+      };
+      dispatch(setUserRedux(userData as any));
     }
   };
 

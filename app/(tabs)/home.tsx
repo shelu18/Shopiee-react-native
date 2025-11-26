@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setProducts, setLoading as setProductsLoading } from '../../store/slices/productsSlice';
 import { getAllProducts } from '../../services/productService';
 import { Colors } from '../../constants/colors';
 import { Product } from '../../types';
@@ -27,29 +29,34 @@ const BANNER_WIDTH = width - 32;
 const PRODUCT_CARD_WIDTH = 180;
 
 export default function HomeScreen() {
-  const { user, signOut } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user } = useAuth();
   const { getCartItemsCount, addToCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Get products from Redux store
+  const products = useAppSelector((state) => state.products.products);
+  const loading = useAppSelector((state) => state.products.loading);
   const cartCount = getCartItemsCount();
 
   useEffect(() => {
-    loadProducts();
+    if (products.length === 0) {
+      loadProducts();
+    }
   }, []);
 
   const loadProducts = async () => {
     try {
+      dispatch(setProductsLoading(true));
       const fetchedProducts = await getAllProducts();
-      setProducts(fetchedProducts);
+      dispatch(setProducts(fetchedProducts));
     } catch (error) {
       console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
+      dispatch(setProductsLoading(false));
     }
   };
 
-  const getFirstName = () => {
+  const getFirstName = useCallback(() => {
     if (user?.displayName) {
       return user.displayName.split(' ')[0];
     }
@@ -57,22 +64,17 @@ export default function HomeScreen() {
       return user.email.split('@')[0];
     }
     return 'User';
-  };
+  }, [user?.displayName, user?.email]);
 
-  const getInitial = () => {
+  const getInitial = useMemo(() => {
     return getFirstName().charAt(0).toUpperCase();
-  };
+  }, [getFirstName]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace('/(auth)/login');
-  };
-
-  const renderHeader = () => (
+  const renderHeader = useCallback(() => (
     <View style={styles.header}>
       <View style={styles.topRow}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getInitial()}</Text>
+          <Text style={styles.avatarText}>{getInitial}</Text>
         </View>
         <View style={styles.locationContainer}>
           <Text style={styles.locationLabel}>{getFirstName()}'s Home</Text>
@@ -101,7 +103,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </TouchableOpacity>
     </View>
-  );
+  ), [getInitial, getFirstName, cartCount]);
 
   const renderCarousel = () => (
     <View style={styles.carouselContainer}>
