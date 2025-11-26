@@ -71,8 +71,9 @@ export default function ProductDetailsScreen() {
         },
       ]);
       
-      // Reload product to get updated stock
-      await loadProduct();
+      // Reset quantity after adding
+      setQuantity(1);
+      // No need to reload - Redux already updated the stock
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to add item to cart');
     }

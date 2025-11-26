@@ -162,18 +162,19 @@ export default function HomeScreen() {
     </View>
   );
 
-  const handleAddToCart = async (product: Product) => {
+  const handleAddToCart = useCallback(async (product: Product) => {
     try {
       await addToCart(product, 1);
-      Alert.alert('Success', `${product.name} added to cart`);
-      // Reload products to get updated stock
-      await loadProducts();
+      Alert.alert('Success', `${product.name} added to bag`, [{ text: 'OK' }], {
+        cancelable: true,
+      });
+      // No need to reload - Redux already updated the stock
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to add item to cart');
     }
-  };
+  }, [addToCart]);
 
-  const renderProduct = ({ item }: { item: Product }) => {
+  const renderProduct = useCallback(({ item }: { item: Product }) => {
     const favorite = isFavorite(item.id);
     
     return (
@@ -209,7 +210,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </TouchableOpacity>
     );
-  };
+  }, [isFavorite, toggleFavorite, handleAddToCart]);
 
   if (loading) {
     return (

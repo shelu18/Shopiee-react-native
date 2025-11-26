@@ -57,27 +57,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = async (product: Product, quantity: number) => {
     try {
-      // Check if we have enough stock in Firestore
-      const currentProduct = await getProductById(product.id);
-      if (!currentProduct) {
-        throw new Error('Product not found');
-      }
-
       const existingItem = cartItems.find((item) => item.product.id === product.id);
       const currentCartQuantity = existingItem ? existingItem.quantity : 0;
       const totalQuantity = currentCartQuantity + quantity;
 
-      if (totalQuantity > currentProduct.stock) {
-        throw new Error(`Only ${currentProduct.stock} items available in stock`);
+      // Get product from Redux store first (faster than Firestore)
+      const storeProduct = product;
+      
+      if (totalQuantity > storeProduct.stock) {
+        throw new Error(`Only ${storeProduct.stock} items available in stock`);
       }
 
-      // Decrement stock in Firestore immediately
-      const newStock = currentProduct.stock - quantity;
-      await updateProductStock(product.id, newStock);
+      const newStock = storeProduct.stock - quantity;
 
-      // Update Redux store
+      // OPTIMISTIC UPDATE: Update UI immediately
       dispatch(updateProductStockRedux({ productId: product.id, stock: newStock }));
       dispatch(addItem({ product: { ...product, stock: newStock }, quantity }));
+
+      // Update Firestore in background (non-blocking)
+      updateProductStock(product.id, newStock).catch((error) => {
+        console.error('Background stock update failed:', error);
+        // Rollback on failure
+        dispatch(updateProductStockRedux({ productId: product.id, stock: storeProduct.stock }));
+        dispatch(removeItem(product.id));
+      });
     } catch (error) {
       console.error('Error adding to cart:', error);
       throw error;
@@ -86,23 +89,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeFromCart = async (productId: string) => {
     try {
-      // Find the item being removed
       const itemToRemove = cartItems.find((item) => item.product.id === productId);
       
       if (itemToRemove) {
-        // Restore stock to Firestore when item is removed
-        const currentProduct = await getProductById(productId);
-        if (currentProduct) {
-          const restoredStock = currentProduct.stock + itemToRemove.quantity;
-          await updateProductStock(productId, restoredStock);
-          
-          // Update Redux store
-          dispatch(updateProductStockRedux({ productId, stock: restoredStock }));
-        }
-      }
+        const restoredStock = itemToRemove.product.stock + itemToRemove.quantity;
+        
+        // OPTIMISTIC UPDATE: Update UI immediately
+        dispatch(updateProductStockRedux({ productId, stock: restoredStock }));
+        dispatch(removeItem(productId));
 
-      // Remove from Redux cart
-      dispatch(removeItem(productId));
+        // Update Firestore in background
+        updateProductStock(productId, restoredStock).catch((error) => {
+          console.error('Background stock restoration failed:', error);
+        });
+      } else {
+        dispatch(removeItem(productId));
+      }
     } catch (error) {
       console.error('Error removing from cart:', error);
       throw error;
@@ -121,24 +123,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       const quantityDifference = newQuantity - cartItem.quantity;
 
-      // Get current stock from Firestore
-      const currentProduct = await getProductById(productId);
-      if (!currentProduct) {
-        throw new Error('Product not found');
+      // Check stock from current cart item (already has latest stock)
+      if (quantityDifference > 0 && quantityDifference > cartItem.product.stock) {
+        throw new Error(`Only ${cartItem.product.stock} more items available`);
       }
 
-      // If increasing quantity, check if we have enough stock
-      if (quantityDifference > 0 && quantityDifference > currentProduct.stock) {
-        throw new Error(`Only ${currentProduct.stock} more items available`);
-      }
+      const newStock = cartItem.product.stock - quantityDifference;
 
-      // Update stock in Firestore
-      const newStock = currentProduct.stock - quantityDifference;
-      await updateProductStock(productId, newStock);
-
-      // Update Redux store
+      // OPTIMISTIC UPDATE: Update UI immediately
       dispatch(updateProductStockRedux({ productId, stock: newStock }));
       dispatch(updateItemQuantity({ productId, quantity: newQuantity }));
+
+      // Update Firestore in background
+      updateProductStock(productId, newStock).catch((error) => {
+        console.error('Background quantity update failed:', error);
+      });
     } catch (error) {
       console.error('Error updating quantity:', error);
       throw error;
@@ -147,19 +146,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = async () => {
     try {
-      // Restore stock for all items in cart
-      for (const item of cartItems) {
-        const currentProduct = await getProductById(item.product.id);
-        if (currentProduct) {
-          const restoredStock = currentProduct.stock + item.quantity;
-          await updateProductStock(item.product.id, restoredStock);
-          dispatch(updateProductStockRedux({ productId: item.product.id, stock: restoredStock }));
-        }
-      }
+      // Store items for restoration
+      const itemsToRestore = [...cartItems];
 
-      // Clear Redux cart
+      // OPTIMISTIC UPDATE: Clear UI immediately
       dispatch(clearCartRedux());
       await AsyncStorage.removeItem(CART_STORAGE_KEY);
+
+      // Restore stock in background
+      Promise.all(
+        itemsToRestore.map(async (item) => {
+          const restoredStock = item.product.stock + item.quantity;
+          await updateProductStock(item.product.id, restoredStock);
+          dispatch(updateProductStockRedux({ productId: item.product.id, stock: restoredStock }));
+        })
+      ).catch((error) => {
+        console.error('Background stock restoration failed:', error);
+      });
     } catch (error) {
       console.error('Error clearing cart:', error);
       throw error;
