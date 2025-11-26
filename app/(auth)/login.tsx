@@ -10,6 +10,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,7 +20,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signIn, signInWithGoogle, user } = useAuth();
 
   // Redirect based on user authentication and email verification status
   useEffect(() => {
@@ -71,6 +73,35 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    console.log('🔵 [LOGIN] Google button clicked');
+    setGoogleLoading(true);
+    
+    try {
+      console.log('🔵 [LOGIN] Calling signInWithGoogle...');
+      await signInWithGoogle();
+      console.log('✅ [LOGIN] Google Sign-In completed successfully');
+    } catch (error: any) {
+      console.error('❌ [LOGIN] Google Sign-In failed:', error.message);
+      
+      let errorMessage = 'Unable to sign in with Google. ';
+      
+      if (error.message.includes('not configured')) {
+        errorMessage = 'Google Sign-In is not set up yet. Please contact support.';
+      } else if (error.message.includes('cancelled')) {
+        errorMessage = 'Sign-in was cancelled.';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      Alert.alert('Google Sign-In Failed', errorMessage);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -119,6 +150,30 @@ export default function LoginScreen() {
               <ActivityIndicator color={Colors.white} />
             ) : (
               <Text style={styles.buttonText}>Login</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.googleButton, (googleLoading || loading) && styles.buttonDisabled]}
+            onPress={handleGoogleLogin}
+            disabled={googleLoading || loading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color={Colors.text} />
+            ) : (
+              <>
+                <Image
+                  source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
+                  style={styles.googleIcon}
+                />
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
+              </>
             )}
           </TouchableOpacity>
 
@@ -192,6 +247,43 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  googleButton: {
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+  },
+  googleButtonText: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

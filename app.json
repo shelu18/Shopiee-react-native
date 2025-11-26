@@ -15,14 +15,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.shopiee.app"
+      "bundleIdentifier": "com.shelu.shopiee"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.shopiee.app",
+      "package": "com.shelu.shopiee",
+      "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -31,6 +32,13 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5ea3f9b3-5ef7-404a-8c65-e96fded1e25b"
+      }
+    },
+    "owner": "shelu18"
   }
 }

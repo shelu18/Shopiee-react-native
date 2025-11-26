@@ -33,6 +33,7 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
   reloadUser: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 // Cart Context Types

@@ -1,0 +1,28 @@
+{
+  "cli": { "version": ">= 3.18.0", "appVersionSource": "local" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "66106372266-nlci3m6avt7o0a7reqlpt12t9b9vdt41.apps.googleusercontent.com"
+      }
+    },
+    "preview-apk": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "66106372266-nlci3m6avt7o0a7reqlpt12t9b9vdt41.apps.googleusercontent.com"
+      }
+    },
+    "production": {
+      "android": { "buildType": "app-bundle" },
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "66106372266-nlci3m6avt7o0a7reqlpt12t9b9vdt41.apps.googleusercontent.com"
+      }
+    }
+  }
+}
