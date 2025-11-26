@@ -13,13 +13,13 @@ import { useCart } from '../../contexts/CartContext';
 import { Colors } from '../../constants/colors';
 
 export default function CheckoutSuccessScreen() {
-  const { clearCart } = useCart();
+  const { completeOrder } = useCart();
   const scaleAnim = React.useRef(new Animated.Value(0)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Clear the cart when order is placed
-    clearCart();
+    // Complete order - clear cart without restoring stock
+    completeOrder();
 
     // Animate checkmark
     Animated.sequence([

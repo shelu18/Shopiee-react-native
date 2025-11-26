@@ -49,7 +49,7 @@ export default function ProductDetailsScreen() {
     }
   };
 
-  const handleAddToBag = () => {
+  const handleAddToBag = async () => {
     if (!product) return;
 
     if (product.stock < quantity) {
@@ -57,18 +57,25 @@ export default function ProductDetailsScreen() {
       return;
     }
 
-    addToCart(product, quantity);
-    Alert.alert('Success', `${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to bag`, [
-      {
-        text: 'Continue Shopping',
-        onPress: () => router.back(),
-        style: 'cancel',
-      },
-      {
-        text: 'View Cart',
-        onPress: () => router.push('/(tabs)/cart'),
-      },
-    ]);
+    try {
+      await addToCart(product, quantity);
+      Alert.alert('Success', `${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to bag`, [
+        {
+          text: 'Continue Shopping',
+          onPress: () => router.back(),
+          style: 'cancel',
+        },
+        {
+          text: 'View Cart',
+          onPress: () => router.push('/(tabs)/cart'),
+        },
+      ]);
+      
+      // Reload product to get updated stock
+      await loadProduct();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to add item to cart');
+    }
   };
 
   const incrementQuantity = () => {

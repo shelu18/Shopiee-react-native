@@ -9,6 +9,7 @@ import {
   Dimensions,
   Animated,
   PanResponder,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -168,21 +169,33 @@ export default function CartScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const [swipedItemId, setSwipedItemId] = React.useState<string | null>(null);
 
-  const handleIncrement = (productId: string, currentQuantity: number, stock: number) => {
+  const handleIncrement = async (productId: string, currentQuantity: number, stock: number) => {
     if (currentQuantity < stock) {
-      updateQuantity(productId, currentQuantity + 1);
+      try {
+        await updateQuantity(productId, currentQuantity + 1);
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to update quantity');
+      }
     }
   };
 
-  const handleDecrement = (productId: string, currentQuantity: number) => {
+  const handleDecrement = async (productId: string, currentQuantity: number) => {
     if (currentQuantity > 1) {
-      updateQuantity(productId, currentQuantity - 1);
+      try {
+        await updateQuantity(productId, currentQuantity - 1);
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to update quantity');
+      }
     }
   };
 
-  const handleDelete = (productId: string) => {
-    removeFromCart(productId);
-    setSwipedItemId(null);
+  const handleDelete = async (productId: string) => {
+    try {
+      await removeFromCart(productId);
+      setSwipedItemId(null);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to remove item');
+    }
   };
 
   const renderEmptyCart = () => (

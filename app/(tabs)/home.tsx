@@ -10,6 +10,7 @@ import {
   Dimensions,
   ActivityIndicator,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -162,8 +163,11 @@ export default function HomeScreen() {
   const handleAddToCart = async (product: Product) => {
     try {
       await addToCart(product, 1);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
+      Alert.alert('Success', `${product.name} added to cart`);
+      // Reload products to get updated stock
+      await loadProducts();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to add item to cart');
     }
   };
 
@@ -233,9 +237,6 @@ export default function HomeScreen() {
             contentContainerStyle={styles.productList}
           />
         </View>
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -514,18 +515,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
-  },
-  signOutButton: {
-    marginHorizontal: 16,
-    marginVertical: 20,
-    paddingVertical: 14,
-    backgroundColor: Colors.error,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  signOutText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
