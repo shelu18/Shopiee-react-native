@@ -171,6 +171,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const completeOrder = async () => {
     try {
+      // Save order to Firestore before clearing
+      const orderItems = cartItems.map(item => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+      }));
+
+      const orderNumber = `ORD${Date.now().toString().slice(-8)}`;
+      const total = getCartTotal();
+
+      // Import user from auth context
+      const auth = require('../firebaseConfig').auth;
+      const { collection, addDoc, serverTimestamp } = require('firebase/firestore');
+      const db = require('../firebaseConfig').db;
+
+      if (auth.currentUser) {
+        await addDoc(collection(db, 'orders'), {
+          userId: auth.currentUser.uid,
+          orderNumber,
+          items: orderItems,
+          total,
+          status: 'processing',
+          createdAt: serverTimestamp(),
+        });
+      }
+
       // Clear cart WITHOUT restoring stock (order is completed)
       dispatch(clearCartRedux());
       await AsyncStorage.removeItem(CART_STORAGE_KEY);

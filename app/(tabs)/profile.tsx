@@ -140,6 +140,18 @@ export default function ProfileScreen() {
           
           <TouchableOpacity 
             style={styles.actionButton}
+            onPress={() => router.push('/orders')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.actionIconContainer, { backgroundColor: '#E3F2FD' }]}>
+              <Ionicons name="receipt-outline" size={24} color="#2196F3" />
+            </View>
+            <Text style={[styles.actionText, { color: '#2196F3' }]}>My Orders</Text>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.actionButton, { marginTop: 12 }]}
             onPress={handleSignOut}
             activeOpacity={0.7}
           >
