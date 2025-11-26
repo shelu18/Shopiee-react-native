@@ -61,8 +61,7 @@ export default function ProductDetailsScreen() {
       await addToCart(product, quantity);
       Alert.alert('Success', `${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to bag`, [
         {
-          text: 'Continue Shopping',
-          onPress: () => router.back(),
+          text: 'Cancel',
           style: 'cancel',
         },
         {
