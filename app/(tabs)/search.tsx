@@ -135,42 +135,46 @@ export default function SearchScreen() {
       <View style={styles.searchRow}>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#34C759" style={styles.searchIcon} />
-          {searchText || selectedFilters.length > 0 ? (
-            <View style={styles.activeSearchContent}>
-              {searchText && (
-                <Text style={styles.searchText}>{searchText}</Text>
-              )}
-              {selectedFilters.map((filter) => (
-                <View key={filter} style={styles.activeFilterChip}>
-                  <Text style={styles.activeFilterText}>{filter}</Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search fresh groceries"
-              placeholderTextColor={Colors.placeholder}
-              value={searchText}
-              onChangeText={setSearchText}
-              autoFocus={false}
-            />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search fresh groceries"
+            placeholderTextColor={Colors.placeholder}
+            value={searchText}
+            onChangeText={setSearchText}
+            autoFocus={false}
+          />
+          {searchText && (
+            <TouchableOpacity 
+              style={styles.clearInputButton}
+              onPress={() => setSearchText('')}
+            >
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
           )}
         </View>
         <TouchableOpacity style={styles.filterButton}>
           <Ionicons name="options-outline" size={24} color={Colors.text} />
         </TouchableOpacity>
       </View>
-      {(searchText || selectedFilters.length > 0) && (
-        <TouchableOpacity 
-          style={styles.clearSearchButton}
-          onPress={() => {
-            setSearchText('');
-            setSelectedFilters([]);
-          }}
-        >
-          <Text style={styles.clearSearchText}>Clear all</Text>
-        </TouchableOpacity>
+      {selectedFilters.length > 0 && (
+        <View style={styles.activeFiltersRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {selectedFilters.map((filter) => (
+              <View key={filter} style={styles.activeFilterChip}>
+                <Text style={styles.activeFilterText}>{filter}</Text>
+                <TouchableOpacity onPress={() => toggleFilter(filter)}>
+                  <Ionicons name="close" size={16} color="#34C759" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+          <TouchableOpacity 
+            style={styles.clearAllButton}
+            onPress={() => setSelectedFilters([])}
+          >
+            <Text style={styles.clearAllText}>Clear</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -395,35 +399,35 @@ const styles = StyleSheet.create({
     color: Colors.text,
     height: '100%',
   },
-  activeSearchContent: {
-    flex: 1,
+  clearInputButton: {
+    padding: 4,
+  },
+  activeFiltersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    marginTop: 8,
     gap: 8,
-    paddingVertical: 8,
-  },
-  searchText: {
-    fontSize: 16,
-    color: Colors.text,
-    fontWeight: '500',
   },
   activeFilterChip: {
-    backgroundColor: '#34C759',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 16,
+    gap: 6,
+    marginRight: 8,
   },
   activeFilterText: {
     fontSize: 14,
-    color: Colors.white,
+    color: '#34C759',
     fontWeight: '500',
   },
-  clearSearchButton: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
+  clearAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  clearSearchText: {
+  clearAllText: {
     fontSize: 14,
     color: '#34C759',
     fontWeight: '600',

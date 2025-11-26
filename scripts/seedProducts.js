@@ -1,5 +1,5 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, doc, setDoc } = require('firebase/firestore');
+const { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } = require('firebase/firestore');
 require('dotenv').config();
 
 const firebaseConfig = {
@@ -61,7 +61,7 @@ const products = [
     name: 'Red Grapes',
     description: 'Seedless red grapes, naturally sweet and perfect for snacking or making juice.',
     price: 3.99,
-    imageUrl: 'https://images.unsplash.com/photo-1599819177583-cadb0a2e2685?w=500',
+    imageUrl: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=500',
     stock: 60,
     category: 'Fruits',
     tags: ['Grape', 'Sweet Fruit', 'Fresh'],
@@ -71,7 +71,7 @@ const products = [
     name: 'Ripe Mangoes',
     description: 'Sweet tropical mangoes, rich in vitamins. Perfect for smoothies and desserts.',
     price: 4.49,
-    imageUrl: 'https://images.unsplash.com/photo-1605664515813-4f8340313d7c?w=500',
+    imageUrl: 'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=500',
     stock: 45,
     category: 'Fruits',
     tags: ['Mango', 'Sweet Fruit', 'Fresh'],
@@ -122,6 +122,19 @@ async function seedProducts() {
   console.log('🌱 Starting to seed products...');
   
   try {
+    // First, delete all existing products
+    console.log('🗑️  Deleting existing products...');
+    const productsCollection = collection(db, 'products');
+    const existingProducts = await getDocs(productsCollection);
+    
+    for (const productDoc of existingProducts.docs) {
+      await deleteDoc(doc(db, 'products', productDoc.id));
+      console.log(`🗑️  Deleted: ${productDoc.id}`);
+    }
+    
+    console.log('✨ All existing products deleted. Adding new products...\n');
+    
+    // Now add the new products
     for (const product of products) {
       const productId = product.id;
       const productData = { ...product };
@@ -132,7 +145,7 @@ async function seedProducts() {
       console.log(`✅ Added: ${product.name} (ID: ${productId})`);
     }
     
-    console.log('🎉 All products added successfully!');
+    console.log('\n🎉 All products added successfully!');
     console.log(`📦 Total products: ${products.length}`);
     process.exit(0);
   } catch (error) {
