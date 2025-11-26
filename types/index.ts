@@ -6,6 +6,8 @@ export interface Product {
   price: number;
   imageUrl: string;
   stock: number;
+  category?: string;
+  tags?: string[]; // For filtering (e.g., ['Mango', 'Sweet Fruit'])
 }
 
 // Cart Types

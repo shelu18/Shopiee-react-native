@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { useFavorites } from '../../contexts/FavoritesContext';
 import { getAllProducts } from '../../services/productService';
 import { Colors } from '../../constants/colors';
 import { Product } from '../../types';
@@ -26,7 +27,8 @@ const PRODUCT_CARD_WIDTH = 180;
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
-  const { getCartItemsCount } = useCart();
+  const { getCartItemsCount, addToCart } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const cartCount = getCartItemsCount();
@@ -86,17 +88,17 @@ export default function HomeScreen() {
       </View>
       <Text style={styles.greeting}>Hey {getFirstName()} 👋</Text>
       <Text style={styles.subtitle}>Find fresh groceries you want</Text>
-      <View style={styles.searchContainer}>
+      <TouchableOpacity
+        style={styles.searchContainer}
+        onPress={() => router.push('/(tabs)/search')}
+        activeOpacity={0.7}
+      >
         <Ionicons name="search" size={20} color={Colors.textSecondary} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search fresh groceries"
-          placeholderTextColor={Colors.placeholder}
-        />
+        <Text style={styles.searchPlaceholder}>Search fresh groceries</Text>
         <TouchableOpacity style={styles.scanButton}>
           <Ionicons name="scan" size={24} color={Colors.white} />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 
@@ -116,7 +118,8 @@ export default function HomeScreen() {
           />
           <View style={styles.bannerOverlay}>
             <Text style={styles.bannerTitle}>New Member</Text>
-            <Text style={styles.bannerDiscount}>Get 40% Off</Text>
+            <Text style={styles.bannerSubtitle}>discount</Text>
+            <Text style={styles.bannerDiscount}>40%</Text>
             <TouchableOpacity style={styles.claimButton}>
               <Text style={styles.claimText}>Claim now</Text>
             </TouchableOpacity>
@@ -129,10 +132,11 @@ export default function HomeScreen() {
             resizeMode="cover"
           />
           <View style={styles.bannerOverlay}>
-            <Text style={styles.bannerTitle}>Fresh Veggies</Text>
-            <Text style={styles.bannerDiscount}>Best Prices</Text>
+            <Text style={styles.bannerTitle}>New Member</Text>
+            <Text style={styles.bannerSubtitle}>discount</Text>
+            <Text style={styles.bannerDiscount}>30%</Text>
             <TouchableOpacity style={styles.claimButton}>
-              <Text style={styles.claimText}>Shop now</Text>
+              <Text style={styles.claimText}>Claim now</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -143,10 +147,11 @@ export default function HomeScreen() {
             resizeMode="cover"
           />
           <View style={styles.bannerOverlay}>
-            <Text style={styles.bannerTitle}>Organic Food</Text>
-            <Text style={styles.bannerDiscount}>Special Offer</Text>
+            <Text style={styles.bannerTitle}>New Member</Text>
+            <Text style={styles.bannerSubtitle}>discount</Text>
+            <Text style={styles.bannerDiscount}>20%</Text>
             <TouchableOpacity style={styles.claimButton}>
-              <Text style={styles.claimText}>Explore</Text>
+              <Text style={styles.claimText}>Claim now</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -154,29 +159,51 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderProduct = ({ item }: { item: Product }) => (
-    <TouchableOpacity
-      style={styles.productCard}
-      onPress={() => router.push(`/product/${item.id}`)}
-    >
-      <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
-      <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <View style={styles.priceRow}>
-          <Text style={styles.productPrice}>$ {item.price}</Text>
-          <Text style={styles.priceUnit}>/kg</Text>
+  const handleAddToCart = async (product: Product) => {
+    try {
+      await addToCart(product, 1);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  };
+
+  const renderProduct = ({ item }: { item: Product }) => {
+    const favorite = isFavorite(item.id);
+    
+    return (
+      <TouchableOpacity
+        style={styles.productCard}
+        onPress={() => router.push(`/product/${item.id}`)}
+      >
+        <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+        <View style={styles.productInfo}>
+          <Text style={styles.productName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.productPrice}>$ {item.price}</Text>
+            <Text style={styles.priceUnit}>/kg</Text>
+          </View>
         </View>
-      </View>
-      <TouchableOpacity style={styles.favoriteButton}>
-        <Ionicons name="heart-outline" size={20} color={Colors.error} />
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={() => toggleFavorite(item.id)}
+        >
+          <Ionicons
+            name={favorite ? 'heart' : 'heart-outline'}
+            size={20}
+            color={Colors.error}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => handleAddToCart(item)}
+        >
+          <Ionicons name="add" size={20} color={Colors.white} />
+        </TouchableOpacity>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.addButton}>
-        <Ionicons name="add" size={20} color={Colors.white} />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -315,6 +342,11 @@ const styles = StyleSheet.create({
     color: Colors.text,
     height: '100%',
   },
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.placeholder,
+  },
   scanButton: {
     width: 40,
     height: 40,
@@ -357,10 +389,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2D3436',
+    marginBottom: 2,
+  },
+  bannerSubtitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#2D3436',
     marginBottom: 4,
   },
   bannerDiscount: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#2D3436',
     marginBottom: 12,
@@ -402,23 +440,23 @@ const styles = StyleSheet.create({
   },
   productCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    marginBottom: 16,
-    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 20,
+    marginBottom: 12,
+    padding: 16,
     alignItems: 'center',
-    elevation: 3,
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
     position: 'relative',
   },
   productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: Colors.cardBackground,
+    width: 90,
+    height: 90,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
   },
   productInfo: {
     flex: 1,
