@@ -11,7 +11,9 @@
     },
     "preview-apk": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
+      "android": { 
+        "buildType": "apk"
+      },
       "channel": "preview",
       "env": {
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "66106372266-nlci3m6avt7o0a7reqlpt12t9b9vdt41.apps.googleusercontent.com"

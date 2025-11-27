@@ -39,6 +39,12 @@
         "projectId": "5ea3f9b3-5ef7-404a-8c65-e96fded1e25b"
       }
     },
-    "owner": "shelu18"
+    "owner": "shelu18",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5ea3f9b3-5ef7-404a-8c65-e96fded1e25b"
+    }
   }
 }
