@@ -19,6 +19,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const { signIn, user } = useAuth();
 
   // Redirect based on user authentication and email verification status
@@ -32,16 +34,40 @@ export default function LoginScreen() {
     }
   }, [user]);
 
+  const validateEmail = (text: string) => {
+    setEmail(text);
+    if (!text.trim()) {
+      setEmailError('Email is required');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) {
+      setEmailError('Please enter a valid email');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const validatePassword = (text: string) => {
+    setPassword(text);
+    if (!text) {
+      setPasswordError('Password is required');
+    } else if (text.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+    } else {
+      setPasswordError('');
+    }
+  };
+
   const handleLogin = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
+      setEmailError('Email is required');
       return;
     }
+    if (emailError) return;
 
     if (!password) {
-      Alert.alert('Error', 'Please enter your password');
+      setPasswordError('Password is required');
       return;
     }
+    if (passwordError) return;
 
     setLoading(true);
     try {
@@ -86,28 +112,30 @@ export default function LoginScreen() {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Enter your email"
               placeholderTextColor={Colors.placeholder}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={validateEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!loading}
             />
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, passwordError ? styles.inputError : null]}
               placeholder="Enter your password"
               placeholderTextColor={Colors.placeholder}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={validatePassword}
               secureTextEntry
               editable={!loading}
             />
+            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
           </View>
 
           <TouchableOpacity
@@ -177,6 +205,15 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: Colors.text,
+  },
+  inputError: {
+    borderColor: Colors.error,
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: 12,
+    marginTop: 4,
   },
   button: {
     backgroundColor: Colors.primary,

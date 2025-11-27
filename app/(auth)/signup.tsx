@@ -21,6 +21,10 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmError, setConfirmError] = useState('');
   const { signUp, user } = useAuth();
 
   // Redirect to email verification after signup
@@ -30,43 +34,64 @@ export default function SignUpScreen() {
     }
   }, [user]);
 
-  const validateForm = () => {
-    if (!fullName.trim()) {
-      Alert.alert('Error', 'Please enter your full name');
-      return false;
+  const validateName = (text: string) => {
+    setFullName(text);
+    if (!text.trim()) {
+      setNameError('Name is required');
+    } else {
+      setNameError('');
     }
+  };
 
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
-      return false;
+  const validateEmail = (text: string) => {
+    setEmail(text);
+    if (!text.trim()) {
+      setEmailError('Email is required');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) {
+      setEmailError('Please enter a valid email');
+    } else {
+      setEmailError('');
     }
+  };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return false;
+  const validatePassword = (text: string) => {
+    setPassword(text);
+    if (!text) {
+      setPasswordError('Password is required');
+    } else if (text.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+    } else {
+      setPasswordError('');
     }
-
-    if (!password) {
-      Alert.alert('Error', 'Please enter a password');
-      return false;
+    // Re-validate confirm password if it's already filled
+    if (confirmPassword) {
+      validateConfirmPassword(confirmPassword, text);
     }
+  };
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
-      return false;
+  const validateConfirmPassword = (text: string, pwd?: string) => {
+    setConfirmPassword(text);
+    const passwordToCompare = pwd || password;
+    if (!text) {
+      setConfirmError('Please confirm your password');
+    } else if (text !== passwordToCompare) {
+      setConfirmError("Passwords don't match");
+    } else {
+      setConfirmError('');
     }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return false;
-    }
-
-    return true;
   };
 
   const handleSignUp = async () => {
-    if (!validateForm()) return;
+    // Validate all fields
+    if (!fullName.trim()) setNameError('Name is required');
+    if (!email.trim()) setEmailError('Email is required');
+    if (!password) setPasswordError('Password is required');
+    if (!confirmPassword) setConfirmError('Please confirm your password');
+    
+    if (nameError || emailError || passwordError || confirmError || 
+        !fullName.trim() || !email.trim() || !password || !confirmPassword) {
+      return;
+    }
 
     setLoading(true);
     try {
@@ -108,54 +133,58 @@ export default function SignUpScreen() {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Full Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, nameError ? styles.inputError : null]}
               placeholder="Enter your full name"
               placeholderTextColor={Colors.placeholder}
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={validateName}
               autoCapitalize="words"
               editable={!loading}
             />
+            {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, emailError ? styles.inputError : null]}
               placeholder="Enter your email"
               placeholderTextColor={Colors.placeholder}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={validateEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!loading}
             />
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, passwordError ? styles.inputError : null]}
               placeholder="Enter your password"
               placeholderTextColor={Colors.placeholder}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={validatePassword}
               secureTextEntry
               editable={!loading}
             />
+            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Confirm Password</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, confirmError ? styles.inputError : null]}
               placeholder="Confirm your password"
               placeholderTextColor={Colors.placeholder}
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => validateConfirmPassword(text)}
               secureTextEntry
               editable={!loading}
             />
+            {confirmError ? <Text style={styles.errorText}>{confirmError}</Text> : null}
           </View>
 
           <TouchableOpacity
@@ -225,6 +254,15 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: Colors.text,
+  },
+  inputError: {
+    borderColor: Colors.error,
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: 12,
+    marginTop: 4,
   },
   button: {
     backgroundColor: Colors.primary,
