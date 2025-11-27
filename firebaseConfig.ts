@@ -2,33 +2,32 @@ import { initializeApp } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 
 // Get Firebase config from environment variables
-// In production builds, these come from EAS build env vars
-// In development, these come from .env file via babel plugin
-const getEnvVar = (key: string): string => {
-  // Try expo-constants first (works in production builds)
-  const value = Constants.expoConfig?.extra?.[key] || 
-                process.env[key] || 
-                '';
-  
-  if (!value) {
-    console.warn(`⚠️ Missing environment variable: ${key}`);
-  }
-  
-  return value;
+// EAS Build injects these from eas.json env section
+// Development uses .env file via babel plugin
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY || '',
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || '',
+  projectId: process.env.FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: process.env.FIREBASE_APP_ID || '',
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID || '',
 };
 
-const firebaseConfig = {
-  apiKey: getEnvVar('FIREBASE_API_KEY'),
-  authDomain: getEnvVar('FIREBASE_AUTH_DOMAIN'),
-  projectId: getEnvVar('FIREBASE_PROJECT_ID'),
-  storageBucket: getEnvVar('FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: getEnvVar('FIREBASE_MESSAGING_SENDER_ID'),
-  appId: getEnvVar('FIREBASE_APP_ID'),
-  measurementId: getEnvVar('FIREBASE_MEASUREMENT_ID'),
-};
+// Validate config in development
+if (__DEV__) {
+  const missingKeys = Object.entries(firebaseConfig)
+    .filter(([key, value]) => !value)
+    .map(([key]) => key);
+  
+  if (missingKeys.length > 0) {
+    console.warn('⚠️ Missing Firebase config:', missingKeys.join(', '));
+  } else {
+    console.log('✅ Firebase config loaded successfully');
+  }
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
