@@ -25,6 +25,6 @@ export default function Index() {
     return <Redirect href="/(auth)/email-verification" />;
   }
 
-  // If no user, go to login
-  return <Redirect href="/(auth)/login" />;
+  // If no user, go to welcome screen
+  return <Redirect href="/(auth)/welcome" />;
 }

@@ -10,7 +10,6 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,8 +21,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { signUp, signInWithGoogle, user } = useAuth();
+  const { signUp, user } = useAuth();
 
   // Redirect to email verification after signup
   useEffect(() => {
@@ -92,35 +90,6 @@ export default function SignUpScreen() {
       Alert.alert('Sign Up Failed', errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleSignUp = async () => {
-    console.log('🔵 [SIGNUP] Google button clicked');
-    setGoogleLoading(true);
-    
-    try {
-      console.log('🔵 [SIGNUP] Calling signInWithGoogle...');
-      await signInWithGoogle();
-      console.log('✅ [SIGNUP] Google Sign-Up completed successfully');
-    } catch (error: any) {
-      console.error('❌ [SIGNUP] Google Sign-Up failed:', error.message);
-      
-      let errorMessage = 'Unable to sign up with Google. ';
-      
-      if (error.message.includes('not configured')) {
-        errorMessage = 'Google Sign-In is not set up yet. Please contact support.';
-      } else if (error.message.includes('cancelled')) {
-        errorMessage = 'Sign-up was cancelled.';
-      } else if (error.message.includes('network')) {
-        errorMessage = 'Network error. Please check your connection.';
-      } else {
-        errorMessage += error.message;
-      }
-      
-      Alert.alert('Google Sign-Up Failed', errorMessage);
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
@@ -201,30 +170,6 @@ export default function SignUpScreen() {
             )}
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.googleButton, (googleLoading || loading) && styles.buttonDisabled]}
-            onPress={handleGoogleSignUp}
-            disabled={googleLoading || loading}
-          >
-            {googleLoading ? (
-              <ActivityIndicator color={Colors.text} />
-            ) : (
-              <>
-                <Image
-                  source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
-                  style={styles.googleIcon}
-                />
-                <Text style={styles.googleButtonText}>Continue with Google</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/login')} disabled={loading}>
@@ -295,43 +240,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  googleButton: {
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  googleIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 12,
-  },
-  googleButtonText: {
-    color: Colors.text,
-    fontSize: 16,
-    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',
