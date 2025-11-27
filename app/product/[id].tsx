@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,6 +88,31 @@ export default function ProductDetailsScreen() {
   const decrementQuantity = () => {
     if (quantity > 1) {
       setQuantity(quantity - 1);
+    }
+  };
+
+  const handleQuantityChange = (text: string) => {
+    // Remove non-numeric characters
+    const numericValue = text.replace(/[^0-9]/g, '');
+    
+    if (numericValue === '') {
+      setQuantity(1);
+      return;
+    }
+
+    const newQuantity = parseInt(numericValue, 10);
+    
+    if (isNaN(newQuantity) || newQuantity < 1) {
+      setQuantity(1);
+    } else if (product && newQuantity > product.stock) {
+      Alert.alert(
+        'Stock Limit Exceeded',
+        `Only ${product.stock} units available. Setting quantity to maximum.`,
+        [{ text: 'OK' }]
+      );
+      setQuantity(product.stock);
+    } else {
+      setQuantity(newQuantity);
     }
   };
 
@@ -177,6 +203,35 @@ export default function ProductDetailsScreen() {
             <Text style={styles.priceUnit}>/kg</Text>
           </Text>
 
+          {/* Stock Indicator */}
+          <View style={styles.stockContainer}>
+            {product.stock === 0 ? (
+              <View style={[styles.stockBadge, styles.stockOutOfStock]}>
+                <Ionicons name="close-circle" size={16} color="#FF3B30" />
+                <Text style={[styles.stockText, styles.stockTextDanger]}>Out of Stock</Text>
+              </View>
+            ) : product.stock <= 4 ? (
+              <View style={[styles.stockBadge, styles.stockLow]}>
+                <Ionicons name="alert-circle" size={16} color="#FF9500" />
+                <Text style={[styles.stockText, styles.stockTextWarning]}>
+                  Only {product.stock} left!
+                </Text>
+              </View>
+            ) : product.stock <= 10 ? (
+              <View style={[styles.stockBadge, styles.stockMedium]}>
+                <Ionicons name="information-circle" size={16} color="#FF9500" />
+                <Text style={[styles.stockText, styles.stockTextWarning]}>
+                  {product.stock} units available
+                </Text>
+              </View>
+            ) : (
+              <View style={[styles.stockBadge, styles.stockHigh]}>
+                <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                <Text style={[styles.stockText, styles.stockTextSuccess]}>In Stock</Text>
+              </View>
+            )}
+          </View>
+
           {/* Description */}
           <View style={styles.descriptionContainer}>
             <Text style={styles.descriptionTitle}>Description</Text>
@@ -197,7 +252,14 @@ export default function ProductDetailsScreen() {
             >
               <Ionicons name="remove" size={24} color={quantity === 1 ? '#CCC' : '#34C759'} />
             </TouchableOpacity>
-            <Text style={styles.quantityText}>{quantity}</Text>
+            <TextInput
+              style={styles.quantityText}
+              value={quantity.toString()}
+              onChangeText={handleQuantityChange}
+              keyboardType="number-pad"
+              maxLength={4}
+              selectTextOnFocus
+            />
             <TouchableOpacity
               style={[
                 styles.quantityButton,
@@ -428,6 +490,44 @@ const styles = StyleSheet.create({
     color: '#999',
     lineHeight: 24,
   },
+  stockContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  stockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  stockHigh: {
+    backgroundColor: '#E8F8EC',
+  },
+  stockMedium: {
+    backgroundColor: '#FFF4E6',
+  },
+  stockLow: {
+    backgroundColor: '#FFF4E6',
+  },
+  stockOutOfStock: {
+    backgroundColor: '#FFE8E6',
+  },
+  stockText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  stockTextSuccess: {
+    color: '#34C759',
+  },
+  stockTextWarning: {
+    color: '#FF9500',
+  },
+  stockTextDanger: {
+    color: '#FF3B30',
+  },
   bottomContainer: {
     position: 'absolute',
     bottom: 0,
@@ -474,8 +574,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1E1E1E',
     marginHorizontal: 20,
-    minWidth: 30,
+    minWidth: 60,
     textAlign: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   addToBagButton: {
     flex: 1,
